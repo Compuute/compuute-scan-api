@@ -51,7 +51,7 @@ app = FastAPI(
         "security scanner. Designed for agent-callable consumption: "
         "idempotent retries, cache headers, OpenAPI spec, MCP tool exposure."
     ),
-    version="0.2.0",
+    version="0.3.0",
     contact={"name": "Compuute AB", "url": "https://compuute.se", "email": "daniel@compuute.se"},
     license_info={"name": "MIT", "url": "https://github.com/Compuute/compuute-scan-api/blob/main/LICENSE"},
     lifespan=lifespan,
