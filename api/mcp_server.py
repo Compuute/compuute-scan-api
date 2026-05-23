@@ -40,6 +40,27 @@ mcp_app = FastMCP(
 # default would otherwise resolve to /mcp/mcp/.
 mcp_app.settings.streamable_http_path = "/"
 
+# FastMCP's transport-security defaults only allow localhost (DNS-rebinding
+# protection). In production behind Railway we must explicitly allow the
+# public domains we serve from.
+mcp_app.settings.transport_security.allowed_hosts = [
+    "scan.compuute.se",
+    "scan.compuute.se:*",
+    "compuute-scan-api-production.up.railway.app",
+    "compuute-scan-api-production.up.railway.app:*",
+    # Keep localhost for local dev + healthchecks
+    "127.0.0.1:*",
+    "localhost:*",
+    "[::1]:*",
+]
+mcp_app.settings.transport_security.allowed_origins = [
+    "https://scan.compuute.se",
+    "https://compuute-scan-api-production.up.railway.app",
+    "http://127.0.0.1:*",
+    "http://localhost:*",
+    "http://[::1]:*",
+]
+
 
 @mcp_app.tool()
 async def scan_mcp_server(ctx: Context, github_url: str) -> dict:
