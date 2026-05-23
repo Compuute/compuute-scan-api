@@ -94,6 +94,10 @@ Bundled compuute-scan version is configured via `COMPUUTE_SCAN_PATH` env var.
 | [docs/agentic-market-submission.md](docs/agentic-market-submission.md) | Three paths to Agentic.market listing with engineering effort estimates |
 | [scripts/status.sh](scripts/status.sh) | 30-second project status check (run anytime) |
 
+## Security
+
+Found a vulnerability? See [SECURITY.md](SECURITY.md) — email security@compuute.se. We follow a 90-day coordinated disclosure window.
+
 ## License
 
 MIT (matches compuute-scan).
