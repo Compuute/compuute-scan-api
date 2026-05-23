@@ -83,6 +83,17 @@ Bundled compuute-scan version is configured via `COMPUUTE_SCAN_PATH` env var.
 | Pro | Teams shipping MCP to production | TBD |
 | Audit | Manual L2-L4 audit by Compuute AB | $5K-30K — see [compuute.se/audit](https://compuute.se/audit) |
 
+## Documentation
+
+| Doc | For |
+|-----|-----|
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Component diagram, request flow, threat model, deployment topology |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Local setup, layout, code style, common pitfalls — onboard a new dev in 30 min |
+| [docs/STRATEGY.md](docs/STRATEGY.md) | Position, pricing tiers, roadmap, decision log — why we built it this way |
+| [docs/MONITORING.md](docs/MONITORING.md) | Endpoints to watch, automated checks, runbook for failures |
+| [docs/agentic-market-submission.md](docs/agentic-market-submission.md) | Three paths to Agentic.market listing with engineering effort estimates |
+| [scripts/status.sh](scripts/status.sh) | 30-second project status check (run anytime) |
+
 ## License
 
 MIT (matches compuute-scan).
