@@ -4,6 +4,8 @@
 
 POST a public GitHub repo URL → get a structured security report scored against 37 MCP-specific rules across 8 languages (TS/JS, Python, Go, Rust, C#, Java, Kotlin).
 
+> **Honesty note (read first):** compuute-scan is a **pattern-breadth detector**, not an exploitability oracle. Historic false-positive rate after manual validation is **~90% on raw output** (verified against [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers): 138 raw findings → 13 confirmed). Every response carries a `_disclaimer` field stating this explicitly. Use findings as a triage queue, not as a list of confirmed vulnerabilities. See [docs/FP-RATES.md](docs/FP-RATES.md) for per-rule transparency.
+
 ---
 
 ## Endpoints
