@@ -134,13 +134,20 @@ def _clone(url: str, dest: Path) -> dict[str, Any]:
             http_status=504,
         )
     if proc.returncode != 0:
-        # Common failures: 404, auth required for private repo, network
-        stderr_tail = (proc.stderr or "")[-200:]
-        raise ScanError(
-            "clone_failed",
-            f"git clone failed: {stderr_tail.strip()}",
-            http_status=422 if "not found" in stderr_tail.lower() else 502,
-        )
+        # Common failures: 404, auth required for private repo, network.
+        # Sanitize stderr: classify into a public message, never leak tempdir
+        # paths or raw git internals (avoids info disclosure per self-pentest).
+        stderr = (proc.stderr or "").lower()
+        if "not found" in stderr or "could not read" in stderr or "authentication" in stderr:
+            msg = "Repository not found or not public. Only public GitHub repos are accepted."
+            status = 422
+        elif "ssl" in stderr or "could not resolve" in stderr or "timed out" in stderr:
+            msg = "Network error while reaching GitHub. Try again."
+            status = 502
+        else:
+            msg = "Clone failed. Repository may be malformed or temporarily unavailable."
+            status = 502
+        raise ScanError("clone_failed", msg, http_status=status)
 
     # Enforce size cap post-clone
     total = sum(p.stat().st_size for p in dest.rglob("*") if p.is_file())

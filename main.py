@@ -58,6 +58,10 @@ app = FastAPI(
 
 import os as _os  # noqa: E402
 
+from api.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
+
+app.add_middleware(SecurityHeadersMiddleware)
+
 app.add_middleware(
     CORSMiddleware,
     # Tight CORS: no wildcard. Add specific origins via CORS_EXTRA_ORIGINS env var.
