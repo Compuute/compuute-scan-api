@@ -58,12 +58,21 @@ for MS in "P0 — credibility baseline" "P1 — track record" "P2 — adoption a
   printf "  ${cyan}%s${reset}  %s open of %s\n" "$(echo "$MS" | cut -d' ' -f1)" "$COUNT" "$TOTAL"
 done
 
-# 5. Next P0 issue (highest priority)
+# 5. Next issue — fall through P0 → P1 → P2 → P3
 echo ""
-NEXT=$(gh issue list --milestone "P0 — credibility baseline" --state open --limit 1 --json number,title 2>/dev/null | jq -r '.[0] | "#\(.number)  \(.title)"')
-if [ -n "$NEXT" ] && [ "$NEXT" != "null  null" ]; then
-  echo "─── Next up ───"
-  echo "  $NEXT"
+echo "─── Next up ───"
+FOUND_NEXT=""
+for MS in "P0 — credibility baseline" "P1 — track record" "P2 — adoption acceleration" "P3 — enterprise readiness"; do
+  NEXT=$(gh issue list --milestone "$MS" --state open --limit 1 --json number,title 2>/dev/null | jq -r '.[0] | "#\(.number)  \(.title)"')
+  if [ -n "$NEXT" ] && [ "$NEXT" != "#null  null" ]; then
+    echo "  ($MS)"
+    echo "  $NEXT"
+    FOUND_NEXT="yes"
+    break
+  fi
+done
+if [ -z "$FOUND_NEXT" ]; then
+  echo "  All milestones complete. Time to plan v0.5+ or close shop. 🎉"
 fi
 
 # 6. CLAUDE.md verification rule reminder
