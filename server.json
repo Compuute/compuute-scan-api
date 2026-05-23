@@ -1,0 +1,18 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.Compuute/compuute-scan-api",
+  "title": "Compuute MCP Security Scanner",
+  "description": "Scan any public GitHub MCP-server repo for security issues. 37 MCP-specific L1 rules, 8 languages.",
+  "version": "0.3.0",
+  "repository": {
+    "url": "https://github.com/Compuute/compuute-scan-api",
+    "source": "github"
+  },
+  "websiteUrl": "https://scan.compuute.se",
+  "remotes": [
+    {
+      "type": "streamable-http",
+      "url": "https://scan.compuute.se/mcp/"
+    }
+  ]
+}

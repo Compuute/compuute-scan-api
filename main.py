@@ -18,7 +18,7 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from api.routes import scan, scan_x402
+from api.routes import discovery, scan, scan_x402
 
 logger = structlog.get_logger()
 
@@ -67,6 +67,7 @@ app.add_middleware(
 
 app.include_router(scan.router, prefix="/v1", tags=["scan"])
 app.include_router(scan_x402.router, prefix="/v1", tags=["scan-x402"])
+app.include_router(discovery.router, tags=["discovery"])
 
 
 @app.get("/v1/health", tags=["health"])
