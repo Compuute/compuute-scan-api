@@ -5,8 +5,6 @@ HTTP-layer tests mock the service-layer to avoid live clone+scan in CI.
 """
 from __future__ import annotations
 
-import json
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest

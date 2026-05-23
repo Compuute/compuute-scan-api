@@ -11,7 +11,6 @@ Wraps compuute-scan v0.6.2 (37 MCP-specific L1 rules, 8 languages).
 """
 from __future__ import annotations
 
-import os
 from contextlib import asynccontextmanager
 
 import structlog

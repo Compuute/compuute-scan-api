@@ -94,7 +94,6 @@ def test_x402_service_module_exports():
         PRICE_PER_SCAN_USD,
         build_payment_requirements,
         create_payment_required_response,
-        is_x402_configured,
     )
     req = build_payment_requirements()
     assert req["network"] == "eip155:8453"

@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import hashlib
 import json
-import os
 
 import structlog
 from fastapi import APIRouter, Header, HTTPException, Request, Response, status
