@@ -1,0 +1,17 @@
+#!/bin/bash
+# commit-msg hook — enforces issue reference in commit message.
+# git passes the message-file path as $1.
+
+set -u
+
+red='\033[0;31m'; reset='\033[0m'
+fail() { printf "${red}BLOCKED:${reset} %s\n" "$*"; exit 1; }
+
+MSG_FILE="$1"
+MSG="$(cat "$MSG_FILE" 2>/dev/null | grep -v '^#')"
+
+if ! echo "$MSG" | grep -qE '#[0-9]+|\[(P0|P1|P2|P3|MUST|SHOULD)-[0-9]+\]'; then
+  fail "Commit message must reference an issue (#N) or scope ID ([P0-N]/[MUST-N]/etc)."
+fi
+
+exit 0

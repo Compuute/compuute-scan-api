@@ -1,0 +1,25 @@
+#!/bin/bash
+# pre-commit hook — staged files + committer checks (NOT message; see commit-msg).
+# Activate: git config core.hooksPath .githooks
+
+set -u
+
+red='\033[0;31m'; reset='\033[0m'
+fail() { printf "${red}BLOCKED:${reset} %s\n" "$*"; exit 1; }
+
+# 1. Committer hygiene — never claude / anthropic / bot.
+COMMITTER="$(git var GIT_COMMITTER_IDENT 2>/dev/null | awk -F'<' '{print $1}' | xargs)"
+if echo "$COMMITTER" | grep -qi 'claude\|anthropic\|bot'; then
+  fail "Committer must be the human owner. Got: $COMMITTER"
+fi
+
+# 2. Files inside allowlist.
+STAGED=$(git diff --cached --name-only)
+ALLOWED='^(api/|tests/|docs/|scripts/|main\.py|requirements\.txt|Dockerfile|railway\.toml|server\.json|BACKLOG\.md|CHANGELOG\.md|README\.md|SECURITY\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|LICENSE|\.gitignore|\.dockerignore|\.githooks/|\.github/(workflows|ISSUE_TEMPLATE)/)'
+for f in $STAGED; do
+  if ! echo "$f" | grep -qE "$ALLOWED"; then
+    fail "File outside allowlist: $f. Update pre-commit hook if this is intentional."
+  fi
+done
+
+exit 0
