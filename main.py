@@ -56,12 +56,19 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+import os as _os  # noqa: E402
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    # Tight CORS: no wildcard. Add specific origins via CORS_EXTRA_ORIGINS env var.
+    allow_origins=(
+        ["https://compuute.se", "https://www.compuute.se", "https://scan.compuute.se"]
+        + [o.strip() for o in _os.environ.get("CORS_EXTRA_ORIGINS", "").split(",") if o.strip()]
+    ),
     allow_credentials=False,
     allow_methods=["GET", "POST"],
-    allow_headers=["*"],
+    allow_headers=["Content-Type", "Idempotency-Key", "If-None-Match", "X-Payment"],
+    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset", "ETag"],
 )
 
 app.include_router(scan.router, prefix="/v1", tags=["scan"])
