@@ -1,5 +1,7 @@
 # Backlog — compuute-scan-api
 
+📋 **Kanban board:** [Project #6 — compuute-scan-api roadmap](https://github.com/users/Compuute/projects/6)
+
 Single-glance roadmap. Each item links to a GitHub Issue with an acceptance criterion (a runnable command that proves it's done).
 
 **Reading order:** P0 → P1 → P2 → P3. Don't skip levels — each unlocks the credibility for the next.
