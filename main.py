@@ -12,6 +12,7 @@ Wraps compuute-scan v0.6.2 (37 MCP-specific L1 rules, 8 languages).
 from __future__ import annotations
 
 import os
+from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI
@@ -21,6 +22,28 @@ from api.routes import scan
 
 logger = structlog.get_logger()
 
+# Load MCP with graceful degradation — REST works without it.
+try:
+    from api.mcp_server import mcp_app as _mcp_app, mcp_http_app
+    _mcp_available = True
+except Exception as _e:  # noqa: BLE001
+    _mcp_app = None
+    mcp_http_app = None
+    _mcp_available = False
+    logger.warning("mcp_server_unavailable", error=str(_e))
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Start FastMCP's session manager so /mcp/ requests succeed."""
+    if _mcp_available and _mcp_app is not None:
+        async with _mcp_app.session_manager.run():
+            logger.info("mcp_session_manager_started")
+            yield
+    else:
+        yield
+
+
 app = FastAPI(
     title="compuute-scan-api",
     description=(
@@ -28,9 +51,10 @@ app = FastAPI(
         "security scanner. Designed for agent-callable consumption: "
         "idempotent retries, cache headers, OpenAPI spec, MCP tool exposure."
     ),
-    version="0.1.0",
+    version="0.2.0",
     contact={"name": "Compuute AB", "url": "https://compuute.se", "email": "daniel@compuute.se"},
     license_info={"name": "MIT", "url": "https://github.com/Compuute/compuute-scan-api/blob/main/LICENSE"},
+    lifespan=lifespan,
 )
 
 app.add_middleware(
@@ -63,6 +87,12 @@ async def root():
         "version": app.version,
         "docs": "/docs",
         "openapi": "/openapi.json",
-        "mcp_endpoint": "/mcp/",
+        "mcp_endpoint": "/mcp/" if _mcp_available else None,
         "homepage": "https://compuute.se",
     }
+
+
+# Mount the MCP server now that lifespan above will start its session manager.
+if _mcp_available and mcp_http_app is not None:
+    app.mount("/mcp", mcp_http_app)
+    logger.info("mcp_server_mounted")
