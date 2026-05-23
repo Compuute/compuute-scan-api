@@ -42,8 +42,12 @@ jobs:
         run: |
           REF="${{ github.event.release.tag_name || github.event.inputs.tag }}"
           TARBALL="compuute-scan-api-${REF}.tar.gz"
+          # Tar to /tmp first to avoid "file changed as we read it" (the tar
+          # output landing in the same dir we're reading from).
           tar --exclude='.git' --exclude='venv' --exclude='__pycache__' \
-              --exclude='.pytest_cache' -czf "$TARBALL" .
+              --exclude='.pytest_cache' --exclude='./'"$TARBALL" \
+              -czf "/tmp/$TARBALL" .
+          mv "/tmp/$TARBALL" "$TARBALL"
           echo "TARBALL=$TARBALL" >> "$GITHUB_ENV"
 
       - name: Compute SHA-256 hashes (base64) for SLSA subjects
