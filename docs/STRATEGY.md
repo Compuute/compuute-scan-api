@@ -4,11 +4,17 @@ For someone reading this in 6 months trying to understand why decisions were mad
 
 ## Position
 
-**Compuute MCP Security Scan-as-a-Service.**
+**Compuute AB — independent Swedish boutique security consultancy specialising in AI agent / MCP server / procurement-risk audits.**
 
-- Wraps the open-source `compuute-scan` (37 MCP-specific L1 rules, 8 languages).
-- Sold to **operators choosing or shipping MCP servers** (humans), not to autonomous agents directly.
-- Differentiation is the **scanner's MCP-specific rule set + threat-intel response cadence**, not the CVE database (that's commoditized — GitHub Advisory, OSV, OSS Index are free).
+Per Gartner 2026 Hype Cycle for Agentic AI: *"governance, security and cost-focused profiles emerging alongside core agentic AI technologies"* and *"boutique consultancies capture significant value by bundling governance audits with domain expertise"*. We sit precisely in that bundle.
+
+Three product surfaces, one position:
+
+- **compuute-scan (open source) + scan.compuute.se (hosted)** — MCP-specific static security scanner. Lead magnet + technical credibility surface. Sold via volume / discovery, not direct revenue.
+- **L2–L4 MCP Security Audits** — manual review of customer MCP deployments. $5K–$30K SoW.
+- **AI Procurement Risk Audit** (added 2026-05-25, see issue #24) — Layer-1 / Layer-2 / Layer-3 vendor due-diligence for organizations buying enterprise AI capacity. $5K–$15K SoW. Aligned to McKinsey 2026 finding (42% of enterprises have AI workflow optimization as top priority) + State of FinOps 2026 (98% of teams manage AI spend) + Gartner boutique-consultancy opportunity above.
+
+Sold to **operators choosing, shipping, or buying MCP/AI capacity** (humans), not to autonomous agents directly. Differentiation is **threat-intel response cadence** (compuute-scan rule L1-038 added within one week of the Ox Security publication) and **honest three-layer framing** (factual / negotiation / operational — see `docs/audits/ai-procurement-risk-audit.md`), not feature count.
 
 What we are NOT:
 
@@ -21,8 +27,9 @@ What we are NOT:
 | Tier | Audience | Distribution | Price | Status |
 |------|----------|-------------|-------|--------|
 | Free | Indie devs, agent builders | `npx compuute-scan ./repo` (open-source CLI) | $0 | Live |
-| **Per-scan API** | Agents discovering via Agentic.market | `/v1/scan/pay` with x402 | $0.10 USDC | Wired, not yet enabled (`X402_WALLET_ADDRESS` unset) |
-| **Manual audit** | Enterprises shipping MCP to production | `compuute.se/audit` discovery call → SoW | $5K–$30K (L2–L4) | Existing offering |
+| **Per-scan API** | Agents discovering via Agentic.market | `/v1/scan/pay` with x402 | $0.10 USDC | Live (X402_WALLET_ADDRESS set 2026-05-23) |
+| **MCP Security Audit (L2–L4)** | Enterprises shipping MCP to production | `compuute.se/audit` discovery call → SoW | $5K–$30K | Existing offering |
+| **AI Procurement Risk Audit** | Procurement/CTO/CISO buying enterprise AI capacity | `compuute.se/audit` discovery call → SoW + delivered report structured by Layer 1/2/3 | $5K–$15K | Added 2026-05-25 — see issue #24 + `docs/audits/ai-procurement-risk-audit.md` |
 
 The per-scan API is the **entry funnel** for the audit business. An agent that gets `score: 35, critical: 12` will trigger its operator to ask "who scans this for me properly?" — and that's a manual audit lead.
 
@@ -127,3 +134,5 @@ What's **NOT a moat**:
 | 2026-05-23 | GitHub-only, no GitLab/Bitbucket | 70%+ of MCP servers are on GitHub; testing surface multiplier not justified |
 | 2026-05-23 | Vendored compuute-scan in Docker via build-arg | Reproducible builds; no network at scan time |
 | 2026-05-23 | Single Railway region, no DB | Stateless service; horizontal scaling later if needed |
+| 2026-05-25 | Added AI Procurement Risk Audit ($5–15K) as service line; composted tokenwatch CLI to IDEAS.md | Gartner 2026 Hype Cycle: boutiques win by *"bundling governance audits with domain expertise"*. McKinsey 2026: 42% of enterprises prioritize AI workflow optimization. Lio's $30M Series A from a16z (March 2026) confirms procurement-AI demand. Building as service line (6h) instead of CLI (30h) avoids competing with funded incumbents (Helicone, Langfuse, Lio) on commoditized software and stays in boutique-consultancy sweet spot. See issue #24 (build) and #25 (composted CLI) |
+| 2026-05-25 | Position broadened: "MCP security" → "AI agent / MCP / procurement security" | Per Gartner direct recommendation for boutiques to bundle governance + domain expertise. Not drift — deepening into the analyst-named opportunity |

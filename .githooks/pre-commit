@@ -15,7 +15,7 @@ fi
 
 # 2. Files inside allowlist.
 STAGED=$(git diff --cached --name-only)
-ALLOWED='^(api/|tests/|docs/|scripts/|main\.py|requirements\.txt|Dockerfile|railway\.toml|server\.json|BACKLOG\.md|CHANGELOG\.md|README\.md|SECURITY\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|LICENSE|\.gitignore|\.dockerignore|\.githooks/|\.github/(workflows|ISSUE_TEMPLATE)/)'
+ALLOWED='^(api/|tests/|docs/|scripts/|main\.py|requirements\.txt|Dockerfile|railway\.toml|server\.json|BACKLOG\.md|CHANGELOG\.md|README\.md|SECURITY\.md|CONTRIBUTING\.md|CODE_OF_CONDUCT\.md|IDEAS\.md|LICENSE|\.gitignore|\.dockerignore|\.githooks/|\.github/(workflows|ISSUE_TEMPLATE)/)'
 for f in $STAGED; do
   if ! echo "$f" | grep -qE "$ALLOWED"; then
     fail "File outside allowlist: $f. Update pre-commit hook if this is intentional."
