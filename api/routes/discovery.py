@@ -4,10 +4,16 @@ Exposes machine-readable capability cards and SEO surfaces so AI agents,
 agent-orchestration frameworks, and search engines can find this API
 without manual configuration.
 
-  /.well-known/agent.json     — Google A2A Agent Card
-  /.well-known/ai-plugin.json — OpenAI/ChatGPT plugin manifest
-  /robots.txt                 — crawler policy
-  /sitemap.xml                — crawler index
+  /.well-known/agent.json        — Google A2A Agent Card
+  /.well-known/agent-card.json   — alias of agent.json (alternate A2A naming
+                                   convention observed in real probes)
+  /.well-known/ai-plugin.json    — OpenAI/ChatGPT plugin manifest
+  /.well-known/x402.json         — x402 payment-discovery manifest for
+                                   x402-aware agents/aggregators
+  /.well-known/x402              — alias of x402.json (no-suffix variant
+                                   also observed in real probes)
+  /robots.txt                    — crawler policy
+  /sitemap.xml                   — crawler index
 """
 from __future__ import annotations
 
@@ -98,6 +104,80 @@ async def a2a_agent_card():
     })
 
 
+@router.get("/.well-known/agent-card.json", include_in_schema=False)
+async def a2a_agent_card_alias():
+    """Alias of /.well-known/agent.json.
+
+    Some A2A implementations probe the `-card.json` naming convention
+    instead of `agent.json`. Both should return identical content.
+    """
+    return await a2a_agent_card()
+
+
+@router.get("/.well-known/x402.json", include_in_schema=False)
+@router.get("/.well-known/x402", include_in_schema=False)
+async def x402_discovery_manifest():
+    """x402 payment-discovery manifest.
+
+    Aggregators (Coinbase Agentic.market crawlers, x402 directory bots)
+    probe this path to enumerate the paid endpoints we offer. Returns the
+    same shape as a per-endpoint 402 response but listed at the domain
+    level so agents can discover priced paths without first triggering a
+    402.
+
+    Schema mirrors x402 v2 `accepts` blocks. Each entry is one paid endpoint.
+    """
+    # Import lazily — x402_service has wallet address / price config baked in.
+    from api.services.x402_service import (
+        BASE_NETWORK,
+        PRICE_PER_SCAN_USD,
+        USDC_BASE_ADDRESS,
+        WALLET_ADDRESS,
+        is_x402_configured,
+    )
+
+    endpoints = []
+    if is_x402_configured():
+        endpoints.append({
+            "url": f"{_BASE_URL}/v1/scan/pay",
+            "method": "POST",
+            "contentType": "application/json",
+            "description": (
+                "Scan a public GitHub MCP-server repo with compuute-scan. "
+                "Returns severity counts, score, top findings, and a triage "
+                "disclaimer."
+            ),
+            "category": "security",
+            "tags": ["mcp", "static-analysis", "supply-chain", "cve"],
+            "accepts": [{
+                "scheme": "exact",
+                "network": BASE_NETWORK,
+                "asset": USDC_BASE_ADDRESS,
+                "amount": str(int(PRICE_PER_SCAN_USD * 1_000_000)),
+                "payTo": WALLET_ADDRESS,
+                "maxTimeoutSeconds": 300,
+            }],
+        })
+
+    return JSONResponse({
+        "x402Version": 2,
+        "provider": {
+            "name": "Compuute AB",
+            "url": "https://compuute.se",
+            "homepage": _BASE_URL,
+        },
+        "endpoints": endpoints,
+        "freeEndpoints": [
+            {
+                "url": f"{_BASE_URL}/v1/scan",
+                "method": "POST",
+                "description": "Free-tier scan, no payment required, rate-limited.",
+            }
+        ],
+        "documentation": f"{_BASE_URL}/openapi.json",
+    })
+
+
 @router.get("/.well-known/ai-plugin.json", include_in_schema=False)
 async def openai_plugin_manifest():
     """OpenAI / ChatGPT plugin manifest for tool discovery."""
@@ -136,6 +216,8 @@ async def robots_txt():
         "Allow: /mcp\n"
         "Allow: /v1/health\n"
         "Allow: /v1/scan/info\n"
+        "Allow: /v1/scan\n"
+        "Allow: /v1/scan/pay\n"
         f"Sitemap: {_BASE_URL}/sitemap.xml\n"
     )
     return PlainTextResponse(content=body)
@@ -146,7 +228,9 @@ async def sitemap_xml():
     urls = [
         ("/", "weekly", "1.0"),
         ("/.well-known/agent.json", "weekly", "1.0"),
-        ("/.well-known/ai-plugin.json", "weekly", "1.0"),
+        ("/.well-known/agent-card.json", "weekly", "0.9"),
+        ("/.well-known/x402.json", "weekly", "0.9"),
+        ("/.well-known/ai-plugin.json", "weekly", "0.9"),
         ("/openapi.json", "weekly", "0.9"),
         ("/docs", "weekly", "0.8"),
         ("/v1/health", "daily", "0.7"),
