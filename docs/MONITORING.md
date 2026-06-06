@@ -21,14 +21,44 @@ Reports:
 
 ## Live endpoints to bookmark
 
+### Service health
+
 | URL | What it tells you |
 |-----|-------------------|
-| https://scan.compuute.se/v1/health | Liveness + `scanner_available` flag |
-| https://scan.compuute.se/v1/scan/info | Scanner version + limits |
+| https://scan.compuute.se/v1/health | Liveness + `scanner_available` flag + version |
+| https://scan.compuute.se/v1/scan/info | Scanner version + limits + supported ecosystems |
 | https://scan.compuute.se/openapi.json | Surface area — should always parse as valid JSON |
+| https://scan.compuute.se/docs | Swagger UI render — visual sanity check |
+
+### Discovery surfaces (verify these stay reachable; Smithery / Anthropic Registry / Coinbase Agent.market probe them)
+
+| URL | Probe expected from |
+|-----|---------------------|
+| https://scan.compuute.se/.well-known/agent.json | Google A2A clients |
+| https://scan.compuute.se/.well-known/agent-card.json | A2A clients using `-card.json` naming |
+| https://scan.compuute.se/.well-known/ai-plugin.json | OpenAI ChatGPT |
+| https://scan.compuute.se/.well-known/x402.json | Coinbase Agent.market crawlers, x402 aggregators |
+| https://scan.compuute.se/.well-known/x402 | x402 probes without `.json` suffix |
+| https://scan.compuute.se/robots.txt | Google / Bing |
+| https://scan.compuute.se/sitemap.xml | Same |
+
+### Public listings (broken-link checks worth running monthly)
+
+| URL | Purpose |
+|-----|---------|
+| https://registry.modelcontextprotocol.io/v0/servers?search=compuute-scan-api | Anthropic Registry entry |
+| https://smithery.ai/servers/daniel-abbay/compuute-scan-api | Smithery listing |
+| https://mcp.so/server/compuute-scan-api | mcp.so listing |
+| https://compuute.se/pricing | Pricing page (JSON-LD must validate against schema.org) |
+
+### Infrastructure
+
+| URL | What it tells you |
+|-----|-------------------|
 | https://railway.com/project/e464f658-f3c0-4b34-85cc-1ace8dbccbfe | Railway metrics + logs |
 | https://github.com/Compuute/compuute-scan-api | Repo state |
 | https://github.com/Compuute/compuute-scan | Upstream scanner releases |
+| https://basescan.org/address/0xBc13c6642e1b7c62D3DB8aD47FBA2908680CAb67 | x402 wallet balance + tx history |
 
 ## Railway built-in monitoring
 

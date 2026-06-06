@@ -139,6 +139,20 @@ Set on Railway: `railway variables set X402_WALLET_ADDRESS=0x...`
 4. **compuute-scan stdout truncates at ~64 KB pipe buffer.** We use `--output <file>` and read from disk. Don't change to capture stdout.
 5. **The scanner exits non-zero when findings exist.** That's expected — don't `check=True` in subprocess.run.
 
+## Repo scripts
+
+All scripts live in `scripts/` and are POSIX bash. Run them from the repo root.
+
+| Script | When to run | What it does |
+|--------|-------------|--------------|
+| `scripts/precheck.sh` | Start of every session | Verifies branch + clean tree, runs `pytest`, checks the four live endpoints (`/v1/health`, `/v1/scan/info`, `/openapi.json`, `/mcp/`), prints the top open backlog item. Fail-fast: any red and the session halts before edits. |
+| `scripts/postcheck.sh` | End of every session | Verifies committer is the human (per global CLAUDE.md rule 4), re-runs `pytest`, appends a one-line entry to `docs/PROGRESS.md`. Run before pushing. |
+| `scripts/status.sh` | Anytime — live-state ping | Four-probe 30-second check against scan.compuute.se: health, scanner version, OpenAPI parse, MCP initialize. Suitable for cron / status-page integration. |
+| `scripts/sbom.sh` | At every release tag | Generates CycloneDX 1.5 SBOM via `cyclonedx-py`. Optional `--upload <tag>` flag attaches it to a GitHub Release. |
+| `scripts/prospect-research.sh` | Weekly — outreach prep | Pulls candidates from GitHub search (`topic:mcp` / `topic:mcp-server` / `topic:agent`, `pushed:>2025-09-01`), the Anthropic MCP Registry, and Smithery. Deduplicates, drafts a per-candidate DM angle, writes to gitignored `docs/outreach/prospect-batch-<date>.md`. |
+
+All scripts are committed; CI does not execute them. Add new scripts here and update the table — onboarding speed depends on this list being current.
+
 ## Code style
 
 - `from __future__ import annotations` at the top of every Python file.

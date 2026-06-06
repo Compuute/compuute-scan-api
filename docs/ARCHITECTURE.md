@@ -2,13 +2,14 @@
 
 ## Purpose
 
-`compuute-scan-api` is an HTTP + MCP wrapper around [compuute-scan](https://github.com/Compuute/compuute-scan) (a Node.js static analyzer for MCP servers). It exposes the scanner over three surfaces:
+`compuute-scan-api` is an HTTP + MCP wrapper around [compuute-scan](https://github.com/Compuute/compuute-scan) (a Node.js static analyzer for MCP servers). It exposes the scanner over four surfaces:
 
 - **REST**  `POST /v1/scan` — for human-operated tools and dashboards
 - **MCP**   `/mcp/` with `scan_mcp_server` tool — for autonomous AI agents
-- **x402**  `POST /v1/scan/pay` — for pay-per-use without API keys (Agentic.market-compatible)
+- **x402**  `POST /v1/scan/pay` — for pay-per-use without API keys (Coinbase Agent.market compatible)
+- **Discovery surfaces** (`/.well-known/agent.json`, `agent-card.json`, `x402.json`, `ai-plugin.json`) — for crawlers, A2A protocol, and x402-aggregator agents to find the service automatically
 
-The scanner itself is unchanged. This service exists because compuute-scan is a single-file CLI with zero deps, while real consumption needs idempotency, caching, rate limits, payment, and machine-readable metadata.
+The scanner itself is unchanged. This service exists because compuute-scan is a single-file CLI with zero deps, while real consumption needs idempotency, caching, rate limits, payment, machine-readable metadata, and crawler-discoverable manifests.
 
 ## Component diagram
 
@@ -26,6 +27,14 @@ The scanner itself is unchanged. This service exists because compuute-scan is a 
                     │   │  /openapi.json  ─┘                              │   │
                     │   │                                                   │   │
                     │   │  /mcp/          ─── api/mcp_server.py (FastMCP) │   │
+                    │   │                                                   │   │
+                    │   │  /.well-known/agent.json     ─┐                 │   │
+                    │   │  /.well-known/agent-card.json │                 │   │
+                    │   │  /.well-known/ai-plugin.json  │ api/routes/      │   │
+                    │   │  /.well-known/x402.json       │ discovery.py     │   │
+                    │   │  /.well-known/x402            │                 │   │
+                    │   │  /robots.txt                  │                 │   │
+                    │   │  /sitemap.xml                 ─┘                 │   │
                     │   │                                                   │   │
                     │   │             ▼ (all routes delegate)              │   │
                     │   │  api/services/scan.py    ── pure functions       │   │
@@ -84,10 +93,12 @@ client ─┬─▶ FastAPI ─▶ route (scan.py) ─▶ idempotency check (in-
 |--------|-------|----------------|
 | `api/routes/scan.py` | HTTP | Idempotency-Key cache, ETag, Cache-Control, error mapping |
 | `api/routes/scan_x402.py` | HTTP | 402 challenge, X-Payment header verify, settle |
+| `api/routes/discovery.py` | HTTP | `/.well-known/*` manifests, `robots.txt`, `sitemap.xml` |
 | `api/mcp_server.py` | MCP | FastMCP wrapper exposing `scan_mcp_server` tool; same service-layer below |
 | `api/services/scan.py` | Service | URL validation, clone, scanner subprocess, score, parse — **pure** |
 | `api/services/x402_service.py` | Service | Build x402 requirements, verify+settle via facilitator |
 | `api/serializers/scan_serializer.py` | Serialisation | Pydantic request + response models, OpenAPI schemas |
+| `api/middleware/security_headers.py` | Middleware | HSTS, X-Frame-Options, X-Content-Type-Options, CSP, Referrer-Policy, Permissions-Policy (OWASP set) |
 | `main.py` | Wiring | FastAPI app, lifespan, CORS, mount MCP, register routes |
 
 Service-layer modules are pure Python with no FastAPI dependency. They can be reused as a library outside this HTTP service if needed.
