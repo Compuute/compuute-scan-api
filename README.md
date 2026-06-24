@@ -45,6 +45,7 @@ Install in Claude Code: `claude mcp add compuute-scan --transport http --url htt
 | `/.well-known/ai-plugin.json` | OpenAI plugin manifest | ChatGPT / OpenAI tools |
 | `/.well-known/x402.json` | x402 payment manifest | Coinbase Agent.market crawlers, x402 aggregators |
 | `/.well-known/x402` | Alias of `x402.json` | x402 probes without `.json` suffix |
+| `/llms.txt` | markdown summary | LLM-driven agent-search crawlers (Exa, Perplexity-style) per [llmstxt.org](https://llmstxt.org) |
 | `/robots.txt` | crawler policy | search engines |
 | `/sitemap.xml` | URL index | search engines |
 
@@ -124,6 +125,7 @@ pytest tests/ -v
 | `scripts/status.sh` | 30-second live-state check against scan.compuute.se (4 probes) |
 | `scripts/sbom.sh` | Generate CycloneDX SBOM, optionally upload to a GitHub Release |
 | `scripts/prospect-research.sh` | Pull qualified prospects from GitHub + Anthropic Registry, draft DM angles |
+| `scripts/measure-tiers.sh` | T0/T1/T2 distribution snapshot per [docs/agent-economy-strategy.md](docs/agent-economy-strategy.md) §5 — reach, engagement, conversion measured against Railway logs + Base RPC + GitHub stars |
 
 ## Architecture
 
@@ -156,6 +158,8 @@ Bundled compuute-scan version is pinned in the Dockerfile (`ARG COMPUUTE_SCAN_RE
 | [docs/audits/](docs/audits/) | The AI Procurement Risk Audit checklist (lead magnet) |
 | [docs/compliance/](docs/compliance/) | SOC 2 Type I readiness statement, TSC control mapping |
 | [docs/submissions/](docs/submissions/) | LangChain + CrewAI tool wrappers ready for PR/marketplace |
+| [skills/compuute-scan/](skills/compuute-scan/) | Claude Skill package (SKILL.md + scan.sh) — submitted to [anthropics/skills#1346](https://github.com/anthropics/skills/pull/1346) |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Contributor Covenant 2.1 |
 | [docs/launches/](docs/launches/) | Show HN draft + posting checklist |
 | [docs/setup/](docs/setup/) | Status page (BetterStack) + analytics (PostHog) setup guides |
 | [docs/agentic-market-submission.md](docs/agentic-market-submission.md) | Three paths to Coinbase Agent.market listing |
