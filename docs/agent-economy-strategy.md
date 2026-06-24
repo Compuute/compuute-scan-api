@@ -90,16 +90,32 @@ P0 (credibility baseline) and P1 (track record) are closed. Touch them only if a
 
 Per Daniel's directive: dynamic, data-driven, agile to market trend, ROI-focused.
 
-### Leading indicators (weekly)
+### What the original trigger got wrong (recorded 2026-06-24)
 
-| Metric | Source | Cadence |
-|--------|--------|---------|
-| GitHub stars (compuute-scan + compuute-scan-api) | `gh api repos/...` | Daily, alert on +5 |
-| LangChain Hub install count (once #30 lands) | LangChain Hub API | Weekly |
-| Unique visitors compuute.se | Vercel Analytics (when enabled) | Weekly |
-| `POST /v1/scan` calls (excluding healthchecks) | `railway logs --deployment` filtered | Daily |
-| `POST /v1/scan/pay` calls | Same | Daily |
-| Discovery calls booked | Manual log in `docs/outreach/calls.md` | Per call |
+The first version of this section set a calendar trigger of **2026-06-24, 30 days from doc creation (2026-05-25)**. That clock measured the wrong thing. It assumed we had 30 days of *market exposure*. In reality:
+
+- 2026-05-25 → 2026-06-01 (7d): only basic MCP endpoint live; no `.well-known/x402.json`, no agent-card.json, no llms.txt. Effectively undiscoverable by automated agent crawlers.
+- 2026-06-01 → 2026-06-23 (23d): P2.5 sprint added discovery surfaces, but **zero** active distribution work. Sat in place hoping someone would find us.
+- 2026-06-24 (the original cutoff): Anthropic Skill PR opened, llms.txt deployed, 2 awesome-list PRs opened. Show HN still not posted.
+
+Honest read: **we had 0 days of active distribution exposure** when the original trigger fired. Daniel flagged this on 2026-06-24 and the trigger is reset to a condition-based, exposure-anchored model below.
+
+### Leading indicators (weekly — the ones that actually move first)
+
+The order matters: a paid scan requires that an agent first *finds* us, then *succeeds* with a free call, then is *configured* to spend. Measure the early steps, not the last one.
+
+| Tier | Metric | Source | Target before escalating to next tier |
+|------|--------|--------|---------------------------------------|
+| **T0 — Reach** | Unique non-Compuute IPs hitting `/v1/scan`, `/mcp/`, or any `/.well-known/*` per 7-day window | `railway logs --deployment` filtered, excluding 100.64.0.0/10 internal probes and Compuute office IPs | ≥10 unique IPs/week |
+| **T0 — Reach** | Anthropic Skill installs (once anthropics/skills#1346 merges) | Skill-marketplace install telemetry | ≥5 installs/week |
+| **T0 — Reach** | Awesome-list PRs merged | GitHub | ≥1 merged |
+| **T1 — Engagement** | `POST /v1/scan` calls with `repo_url` ≠ a Compuute-owned repo | Railway log grep | ≥20 scans/week |
+| **T1 — Engagement** | GitHub stars on compuute-scan + compuute-scan-api from non-Compuute accounts | `gh api repos/.../stargazers` | ≥10 stars |
+| **T2 — Conversion** | `POST /v1/scan/pay` attempts (any HTTP code) | Railway log grep | ≥1 attempt |
+| **T2 — Conversion** | USDC received on Base L2 wallet | Base RPC `eth_call balanceOf` on `0xBc13c6642e1b7c62D3DB8aD47FBA2908680CAb67` | ≥$0.10 (the first scan) |
+| **T2 — Conversion** | Discovery calls booked | `docs/outreach/calls.md` | ≥1 booked |
+
+T0 must move first. If T0 is dead and T1/T2 also dead, that's a discovery problem (we don't exist to the market). If T0 moves but T1 doesn't, that's a value-prop problem (they find us but the offer doesn't land). Different diagnoses, different fixes.
 
 ### Lagging indicators (monthly)
 
@@ -109,15 +125,27 @@ Per Daniel's directive: dynamic, data-driven, agile to market trend, ROI-focused
 | Paid LOI / signed audit count | Manual |
 | MRR / quarterly revenue | Stripe + on-chain |
 
-### Pivot trigger (binding)
+### Pivot trigger (binding, condition-based)
 
-**30-day cutoff: 2026-06-24.** If by that date we have **none** of:
+The pivot question — Track A (micropayment) vs Track B (B2B audit) — is answered by **post-exposure data**, not calendar age of the strategy doc. The trigger clock starts when active distribution is live, defined as:
 
-- ≥50 GitHub stars from non-Compuute users
-- ≥5 booked discovery calls
-- ≥1 paid LOI or signed audit
+> **Exposure-start (T₀):** the first day after BOTH of these are true:
+> 1. Show HN posted (per `docs/launches/show-hn-2026.md`)
+> 2. At least one of {anthropics/skills#1346, punkpeye/awesome-mcp-servers#8621, any successor awesome-list PR} has been merged
 
-→ we STOP building and re-evaluate strategy. Distribution either works at this scale or we mis-diagnosed the market. No "let's add one more channel and see" — that's the pattern this document exists to prevent.
+From T₀, run a **60-day evaluation window** (not 30 — adoption curves for new agent-tooling categories show a 4–6 week visibility ramp before signals stabilise; 30 days would re-make the same too-short mistake).
+
+**Pivot if, at T₀ + 60 days, ALL THREE of these are true:**
+
+- T0 metrics dead: <10 unique non-Compuute IPs in the trailing 7-day window
+- T1 metrics dead: <5 third-party scan calls in trailing 7 days, <5 non-Compuute GitHub stars
+- T2 metrics dead: 0 paid scans, 0 booked calls
+
+If all three tiers are dead after 60 days of active exposure, that is a clear "market hasn't signalled interest in this packaging" — pivot to Track B (B2B audit) as primary or compost the open-source-CLI thesis entirely. Decision goes in the log below with the metric snapshot that justified it.
+
+**Soft early-warning at T₀ + 30 days:** if T0 is dead at the half-mark, re-evaluate distribution channels (which marketplaces are we missing, is the Skill description discoverable, is Show HN buried). Channel-add, not strategy-pivot.
+
+**No infinite extensions.** "Let me add one more channel and re-measure" is the failure mode this section exists to prevent. If T₀ keeps slipping because Show HN never gets posted, that itself is the pivot signal — own-flake, not market-flake.
 
 ## 6. Why this sequence (issue build-order)
 
@@ -139,7 +167,7 @@ Total focused build time: ~22h spread over 3–5 days.
 | "Distribution-first" was an internal note in STRATEGY.md | Distribution-first is the **dominant** strategy, with measurable cutoffs |
 | Tokenwatch CLI composted on intuition | Compostion verified by a16z data + named gate |
 | Position-lock at "MCP security" → "AI agent / MCP / procurement security" (May 25) | Same — broadened, not drifted |
-| No explicit pivot trigger | **30-day binding cutoff with 3 acceptance criteria** |
+| No explicit pivot trigger | **Condition-based trigger anchored on T₀ (first day of active exposure), 60-day window with tiered T0/T1/T2 acceptance criteria** (revised 2026-06-24 after the original calendar trigger was found to measure doc-age, not market-exposure) |
 | No explicit "don't build" list | Section 4 above — three categories of work we deliberately don't touch |
 
 ## Decision log
@@ -151,3 +179,5 @@ Total focused build time: ~22h spread over 3–5 days.
 | 2026-05-25 | Set 30-day pivot trigger with 3 acceptance criteria | Anti-pattern guard: 6 sessions of build-more without selling. Forcing measurable decision point. |
 | 2026-05-25 | Explicit do-not-build list (selling agent, second product, P0/P1 polish) | Same rationale; documented so future sessions can refuse cleanly |
 | 2026-05-25 | KPI cadence: leading weekly, lagging monthly, pivot review at day 30 | ROI-focused per Daniel's directive |
+| 2026-06-24 | Reset pivot trigger from calendar (2026-06-24) to condition-based (T₀ + 60 days). Restructured leading indicators into T0/T1/T2 tiers. | Daniel flagged on 2026-06-24 that the original 30-day calendar clock measured doc-age, not market-exposure. At the original cutoff we had 0 days of active distribution exposure: Anthropic Skill PR opened same day, llms.txt deployed same day, Show HN unposted. Honest reset: measure post-exposure adoption, not pre-exposure calendar. |
+| 2026-06-24 | Adopted T0 (Reach) / T1 (Engagement) / T2 (Conversion) tiered KPI model | Different dead tiers diagnose different failures (discovery vs value-prop vs conversion). The single-metric "first payment" KPI conflated all three. |
