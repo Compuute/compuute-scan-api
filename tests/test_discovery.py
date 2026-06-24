@@ -85,6 +85,29 @@ async def test_sitemap_lists_new_well_known_paths():
 
 
 @pytest.mark.asyncio
+async def test_llms_txt_returns_200_with_summary_and_endpoints():
+    """llms.txt is a plaintext capability summary for LLM-driven crawlers (Exa et al)."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/llms.txt")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/plain")
+    body = resp.text
+    assert "# compuute-scan-api" in body
+    assert "POST https://scan.compuute.se/v1/scan" in body
+    assert "POST https://scan.compuute.se/v1/scan/pay" in body
+    assert "https://scan.compuute.se/mcp/" in body
+    assert "_disclaimer" in body or "false-positive" in body
+
+
+@pytest.mark.asyncio
+async def test_sitemap_lists_llms_txt():
+    """sitemap.xml advertises llms.txt so agent-search crawlers index it."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/sitemap.xml")
+    assert "/llms.txt" in resp.text
+
+
+@pytest.mark.asyncio
 async def test_robots_allows_paid_and_free_scan_paths():
     """robots.txt explicitly allows /v1/scan and /v1/scan/pay."""
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:

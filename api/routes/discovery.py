@@ -14,6 +14,9 @@ without manual configuration.
                                    also observed in real probes)
   /robots.txt                    — crawler policy
   /sitemap.xml                   — crawler index
+  /llms.txt                      — agent-search index (Exa, semantic search,
+                                   emerging convention for LLM crawlers per
+                                   llmstxt.org / Anthropic in-app submission)
 """
 from __future__ import annotations
 
@@ -218,9 +221,98 @@ async def robots_txt():
         "Allow: /v1/scan/info\n"
         "Allow: /v1/scan\n"
         "Allow: /v1/scan/pay\n"
+        "Allow: /llms.txt\n"
         f"Sitemap: {_BASE_URL}/sitemap.xml\n"
     )
     return PlainTextResponse(content=body)
+
+
+@router.get("/llms.txt", include_in_schema=False)
+async def llms_txt():
+    """llms.txt — concise summary for LLM-driven crawlers (llmstxt.org).
+
+    Emerging convention used by agent-search engines (Exa, Perplexity-style
+    crawlers) to get a token-efficient summary of what a domain offers
+    without parsing HTML. We expose the same surface as agent.json but in
+    flat plaintext + markdown so models can ingest it in one pass.
+    """
+    body = (
+        "# compuute-scan-api\n"
+        "\n"
+        "> MCP-specific static security scanner for AI agents. Scan any public "
+        "GitHub MCP-server repo and get severity counts, score, top findings, "
+        "and a triage disclaimer before your agent installs or connects to "
+        "an unknown server.\n"
+        "\n"
+        "## When to use\n"
+        "\n"
+        "- Before installing or connecting an agent to an MCP server you do not own\n"
+        "- Before recommending an MCP server to a user\n"
+        "- As part of supply-chain due diligence on agent tooling\n"
+        "- For procurement/compliance evidence on third-party MCP code\n"
+        "\n"
+        "## What it covers\n"
+        "\n"
+        "- 37 L1 rules across TypeScript/JavaScript, Python, Go, Rust, C#, Java, Kotlin\n"
+        "- Argument-injection, command-injection, SSRF, supply-chain, secrets leakage, "
+        "tool-description-poisoning, prompt-injection-resistance signals\n"
+        "- Threat-intel response cadence: new rules added within one week of "
+        "published CVE classes (see L1-038 for the Ox Security npx-argument-injection "
+        "vector, added 7 days after Ox publication)\n"
+        "\n"
+        "## How to call it\n"
+        "\n"
+        "### Free tier (no auth, rate-limited)\n"
+        "\n"
+        "```\n"
+        "POST https://scan.compuute.se/v1/scan\n"
+        "Content-Type: application/json\n"
+        "{\"repo_url\": \"https://github.com/<org>/<repo>\"}\n"
+        "```\n"
+        "\n"
+        "### Paid tier (x402, USDC on Base L2)\n"
+        "\n"
+        "```\n"
+        "POST https://scan.compuute.se/v1/scan/pay\n"
+        "X-Payment: <signed x402 payment payload>\n"
+        "Content-Type: application/json\n"
+        "{\"repo_url\": \"https://github.com/<org>/<repo>\"}\n"
+        "```\n"
+        "\n"
+        "Price: $0.10 USDC per scan. 402 challenge returned if header missing.\n"
+        "\n"
+        "### MCP tool\n"
+        "\n"
+        "Connect via Model Context Protocol streamable-HTTP at "
+        "`https://scan.compuute.se/mcp/`. Exposes the tool `scan_mcp_server(github_url)`.\n"
+        "\n"
+        "## Honest framing — read this\n"
+        "\n"
+        "compuute-scan is a pattern-breadth detector, not an exploitability oracle. "
+        "Historic raw false-positive rate is ~90% before manual triage (anchored on "
+        "modelcontextprotocol/servers: 138 raw -> 13 confirmed). Every response "
+        "carries a `_disclaimer` field stating this. Use findings as a triage queue, "
+        "not as a list of confirmed vulnerabilities. Per-rule FP rates: "
+        "https://github.com/Compuute/compuute-scan-api/blob/main/docs/FP-RATES.md\n"
+        "\n"
+        "## Provider\n"
+        "\n"
+        "- Organization: Compuute AB (Stockholm, Sweden)\n"
+        "- Contact: daniel@compuute.se\n"
+        "- Source: https://github.com/Compuute/compuute-scan-api (MIT)\n"
+        "- Scanner source: https://github.com/Compuute/compuute-scan (MIT)\n"
+        "- Methodology: https://github.com/Compuute/compuute-scan-api/blob/main/docs/whitepaper/\n"
+        "- SOC 2 readiness statement: https://github.com/Compuute/compuute-scan-api/blob/main/docs/compliance/soc2-readiness.md\n"
+        "\n"
+        "## Machine-readable\n"
+        "\n"
+        "- OpenAPI: https://scan.compuute.se/openapi.json\n"
+        "- A2A Agent Card: https://scan.compuute.se/.well-known/agent.json\n"
+        "- x402 manifest: https://scan.compuute.se/.well-known/x402.json\n"
+        "- ChatGPT plugin manifest: https://scan.compuute.se/.well-known/ai-plugin.json\n"
+        "- MCP endpoint: https://scan.compuute.se/mcp/\n"
+    )
+    return PlainTextResponse(content=body, media_type="text/plain; charset=utf-8")
 
 
 @router.get("/sitemap.xml", include_in_schema=False)
@@ -231,6 +323,7 @@ async def sitemap_xml():
         ("/.well-known/agent-card.json", "weekly", "0.9"),
         ("/.well-known/x402.json", "weekly", "0.9"),
         ("/.well-known/ai-plugin.json", "weekly", "0.9"),
+        ("/llms.txt", "weekly", "0.9"),
         ("/openapi.json", "weekly", "0.9"),
         ("/docs", "weekly", "0.8"),
         ("/v1/health", "daily", "0.7"),
