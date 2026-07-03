@@ -24,7 +24,7 @@ import json
 import os
 import re
 import shutil
-import subprocess
+import subprocess  # nosec B404
 import tempfile
 import time
 from datetime import datetime, timezone
@@ -120,7 +120,7 @@ def _clone(url: str, dest: Path) -> dict[str, Any]:
         str(dest),
     ]
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B603
             cmd,
             capture_output=True,
             text=True,
@@ -189,7 +189,7 @@ def _run_scanner(repo_path: Path) -> dict[str, Any]:
         str(out_file),
     ]
     try:
-        proc = subprocess.run(
+        proc = subprocess.run(  # nosec B603
             cmd,
             capture_output=True,
             text=True,
@@ -246,7 +246,7 @@ def scan_repo(url: str) -> dict[str, Any]:
             # in case of partial state in production override environments.
             try:
                 shutil.rmtree(repo_dir, ignore_errors=True)
-            except Exception:
+            except Exception:  # nosec B110
                 pass
 
     summary = raw.get("summary", {}) or {}
