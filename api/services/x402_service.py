@@ -12,12 +12,15 @@ Flow:
   4. Server decodes the PaymentPayload, verifies against OUR requirements
      via the facilitator, runs the scan, settles.
 
-Facilitator: defaults to the CDP facilitator (Base mainnet). The community
-facilitator at x402.org serves Base Sepolia (testnet) only — pointing
-mainnet payments there fails verification.
+Facilitator: defaults to the CDP facilitator, which serves both Base mainnet
+and Base Sepolia. The community facilitator at x402.org is Sepolia-only —
+pointing mainnet payments there fails verification.
 
 Configuration via env vars:
   - X402_WALLET_ADDRESS  : Base L2 address that receives USDC (required to enable).
+  - X402_NETWORK         : CAIP-2 network id. Default eip155:8453 (Base mainnet).
+                           Set eip155:84532 for Base Sepolia to rehearse the
+                           full payment chain with free testnet USDC.
   - X402_PRICE_USD       : Price per scan in USD. Default $0.10.
   - X402_FACILITATOR_URL : Default https://api.cdp.coinbase.com/platform/v2/x402.
   - CDP_API_KEY_ID / CDP_API_KEY_SECRET : CDP API key for facilitator auth.
@@ -48,14 +51,62 @@ from api.services.cdp_auth import create_cdp_headers_factory
 
 logger = structlog.get_logger()
 
-# USDC on Base L2 mainnet (CAIP-2 network id, ERC-20 contract address)
-BASE_NETWORK = "eip155:8453"
-USDC_BASE_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
-# EIP-712 domain of Base USDC — clients need this to sign EIP-3009 transfers.
-USDC_BASE_EIP712 = {"name": "USD Coin", "version": "2"}
+MAINNET = "eip155:8453"
+BASE_SEPOLIA = "eip155:84532"
 
-# CDP facilitator serves Base mainnet. https://x402.org/facilitator is
-# Base Sepolia (testnet) only.
+# Per-network USDC config. The EIP-712 domain is NOT the same across
+# networks — Base mainnet USDC signs as name "USD Coin", Base Sepolia as
+# "USDC". Getting it wrong makes every signature fail verification with an
+# error that looks like a key problem, so asset and domain are kept together
+# here rather than as independent env vars. Values mirror the x402 SDK's
+# DEFAULT_ASSETS table (x402.mechanisms.evm.default_assets).
+NETWORKS: dict[str, dict[str, Any]] = {
+    MAINNET: {
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "eip712": {"name": "USD Coin", "version": "2"},
+        "is_testnet": False,
+        "label": "Base mainnet",
+    },
+    BASE_SEPOLIA: {
+        "asset": "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+        "eip712": {"name": "USDC", "version": "2"},
+        "is_testnet": True,
+        "label": "Base Sepolia (testnet)",
+    },
+}
+
+# Mainnet is the default: a misconfigured network must never silently ask
+# real agents to pay in worthless testnet USDC.
+NETWORK = os.environ.get("X402_NETWORK", MAINNET).strip() or MAINNET
+if NETWORK not in NETWORKS:
+    logger.error(
+        "x402_unknown_network",
+        requested=NETWORK,
+        supported=sorted(NETWORKS),
+        action="falling back to Base mainnet",
+    )
+    NETWORK = MAINNET
+
+_NET = NETWORKS[NETWORK]
+USDC_ADDRESS: str = _NET["asset"]
+USDC_EIP712: dict[str, str] = _NET["eip712"]
+IS_TESTNET: bool = _NET["is_testnet"]
+NETWORK_LABEL: str = _NET["label"]
+
+if IS_TESTNET:
+    logger.warning(
+        "x402_testnet_mode",
+        network=NETWORK,
+        label=NETWORK_LABEL,
+        warning="Payments are settled in TESTNET USDC and are worth nothing. "
+        "Unset X402_NETWORK before serving real agents.",
+    )
+
+# Backwards-compatible alias — some callers imported the mainnet constant.
+BASE_NETWORK = NETWORK
+
+# The CDP facilitator serves both Base mainnet and Base Sepolia.
+# https://x402.org/facilitator is Base Sepolia only.
 DEFAULT_FACILITATOR_URL = "https://api.cdp.coinbase.com/platform/v2/x402"
 FACILITATOR_URL = os.environ.get("X402_FACILITATOR_URL", DEFAULT_FACILITATOR_URL)
 
@@ -105,12 +156,12 @@ def build_payment_requirements(price_usd: float | None = None) -> PaymentRequire
     price = price_usd if price_usd is not None else PRICE_PER_SCAN_USD
     return PaymentRequirements(
         scheme="exact",
-        network=BASE_NETWORK,
-        asset=USDC_BASE_ADDRESS,
+        network=NETWORK,
+        asset=USDC_ADDRESS,
         amount=str(int(price * 1_000_000)),  # USDC has 6 decimals
         pay_to=WALLET_ADDRESS,
         max_timeout_seconds=300,
-        extra=dict(USDC_BASE_EIP712),
+        extra=dict(USDC_EIP712),
     )
 
 
