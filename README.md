@@ -18,6 +18,12 @@ Live at <https://scan.compuute.se>. Service version reported by `/v1/health`.
 |--------|------|---------|------|
 | POST | `/v1/scan` | Scan a public GitHub MCP-server repo (free tier, rate-limited) | none |
 | POST | `/v1/scan/pay` | Same as above via [x402](https://www.x402.org/) micropayment ($0.10 USDC on Base L2) | `X-Payment` header |
+
+POST `/v1/scan/pay` with no body to read the payment requirements without paying — the request body is optional precisely so discovery probes reach the 402 instead of body validation. Verify with the Coinbase Agentic Wallet CLI:
+
+```bash
+npx awal x402 details https://scan.compuute.se/v1/scan/pay
+```
 | GET | `/v1/scan/info` | Scanner version + limits + supported ecosystems | none |
 | GET | `/v1/health` | Liveness + scanner-binary availability | none |
 

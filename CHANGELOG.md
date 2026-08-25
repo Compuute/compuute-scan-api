@@ -8,6 +8,27 @@ This scanner is a **pattern-breadth detector with ~90% raw false-positive rate b
 
 ## [Unreleased]
 
+## [0.5.2] — 2026-08-25
+
+### Fixed
+
+- **x402 clients could not discover our pricing.** Discovery tools probe an
+  endpoint with each HTTP method and **no request body**, treating any
+  non-402 answer as "this endpoint takes no payment". `POST /v1/scan/pay`
+  declared a required Pydantic body, so FastAPI returned `422` from its own
+  validation layer before the route ran — and the probe concluded there was
+  nothing to pay for. Found with `awal x402 details` (Coinbase Agentic Wallet
+  CLI), which reported *"No X402 payment requirements found at that URL"*
+  against a service whose 402 body was otherwise fully spec-compliant.
+
+  The body is now optional, so the payment gate runs before body validation
+  and a body-less probe reaches the 402. A body is still required once a
+  payment is presented — that case returns `422 missing_body` rather than a
+  second payment challenge, so a client that forgot the body is not told to
+  pay again.
+
+  Probe result for `POST /v1/scan/pay` with no body: `422` → **`402`**.
+
 ## [0.5.1] — 2026-08-25
 
 ### Added
@@ -125,7 +146,8 @@ This scanner is a **pattern-breadth detector with ~90% raw false-positive rate b
 - OpenAPI v3 spec at `/openapi.json`.
 - Dockerfile bundling compuute-scan at pinned ref.
 
-[Unreleased]: https://github.com/Compuute/compuute-scan-api/compare/v0.5.1...HEAD
+[Unreleased]: https://github.com/Compuute/compuute-scan-api/compare/v0.5.2...HEAD
+[0.5.2]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.5.2
 [0.5.1]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.5.1
 [0.5.0]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.4.0

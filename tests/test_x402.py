@@ -267,3 +267,48 @@ async def test_openapi_documents_x402_endpoint():
     spec = resp.json()
     pay = spec["paths"]["/v1/scan/pay"]["post"]
     assert "402" in pay["responses"]
+
+
+@pytest.mark.asyncio
+async def test_x402_discovery_probe_without_body_returns_402():
+    """REGRESSION: `awal x402 details` probes each HTTP method with NO body
+    and no Content-Type, and treats any non-402 as "endpoint takes no
+    payment". A required Pydantic body made FastAPI answer 422 before the
+    route ran, so real x402 tooling could not discover our pricing at all.
+    """
+    with patch("api.routes.scan_x402.is_x402_configured", return_value=True), \
+         patch("api.services.x402_service.WALLET_ADDRESS", WALLET):
+        async with _client() as client:
+            resp = await client.post(
+                "/v1/scan/pay", headers={"Accept": "application/json"}
+            )
+    assert resp.status_code == 402, (
+        "discovery probe must reach the payment gate, not body validation"
+    )
+    body = resp.json()
+    assert body["x402Version"] == 2
+    assert body["accepts"][0]["extra"] == {"name": "USD Coin", "version": "2"}
+    assert "bazaar" in body["extensions"]
+
+
+@pytest.mark.asyncio
+async def test_x402_paid_request_without_body_is_422_not_402():
+    """Presenting payment with nothing to scan is a client error, and must
+    not be answered with another payment challenge."""
+    with patch("api.routes.scan_x402.is_x402_configured", return_value=True), \
+         patch("api.services.x402_service.WALLET_ADDRESS", WALLET):
+        async with _client() as client:
+            resp = await client.post(
+                "/v1/scan/pay", headers={"X-Payment": _payment_header()}
+            )
+    assert resp.status_code == 422
+    assert resp.json()["code"] == "missing_body"
+
+
+@pytest.mark.asyncio
+async def test_x402_discovery_probe_still_503_when_unconfigured():
+    """A body-less probe must not mask an unconfigured server as 402."""
+    with patch("api.routes.scan_x402.is_x402_configured", return_value=False):
+        async with _client() as client:
+            resp = await client.post("/v1/scan/pay")
+    assert resp.status_code == 503
