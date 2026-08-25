@@ -114,9 +114,27 @@ x402 payment env vars (all optional locally; `/v1/scan/pay` returns 503 until th
 | Var | Purpose | Default |
 |-----|---------|---------|
 | `X402_WALLET_ADDRESS` | Base L2 address receiving USDC | unset (x402 disabled) |
+| `X402_NETWORK` | CAIP-2 network id — `eip155:8453` (Base mainnet) or `eip155:84532` (Base Sepolia) | `eip155:8453` |
 | `X402_PRICE_USD` | Price per scan | `0.10` |
-| `X402_FACILITATOR_URL` | Facilitator base URL | CDP facilitator (Base mainnet) |
-| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | CDP API key for facilitator verify/settle auth | unset (mainnet verify will be rejected) |
+| `X402_FACILITATOR_URL` | Facilitator base URL | CDP facilitator (serves both networks) |
+| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | CDP API key for facilitator verify/settle auth | unset (verify will be rejected) |
+
+### Rehearsing payments on testnet
+
+Set `X402_NETWORK=eip155:84532` to quote prices in Base Sepolia USDC, which is
+free from a faucet. The CDP facilitator serves Sepolia too, so a testnet
+payment exercises the real verify/settle path and your real CDP API keys —
+without moving real money.
+
+Asset address and EIP-712 domain are selected together per network: Base
+mainnet USDC signs as `"USD Coin"`, Base Sepolia as `"USDC"`. Mixing them
+fails every signature with an error that looks like a bad API key, which is
+why they live in one `NETWORKS` table rather than separate env vars.
+
+Mainnet is the default and an unknown value falls back to it, so a typo can
+never silently ask real agents to pay in worthless testnet USDC. Check which
+mode is live with `curl -s https://scan.compuute.se/v1/health` — the `x402`
+block reports `network` and `testnet`.
 
 ## Tests
 

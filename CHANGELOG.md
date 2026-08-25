@@ -8,6 +8,30 @@ This scanner is a **pattern-breadth detector with ~90% raw false-positive rate b
 
 ## [Unreleased]
 
+## [0.5.1] — 2026-08-25
+
+### Added
+
+- **`X402_NETWORK`** — selects the payment network by CAIP-2 id. Defaults to
+  `eip155:8453` (Base mainnet); set `eip155:84532` to rehearse the full
+  payment chain on Base Sepolia with free testnet USDC. The CDP facilitator
+  serves both, so a testnet run exercises the real CDP API-key auth path.
+- `/v1/health` now reports an `x402` block (`enabled`, `network`,
+  `network_label`, `testnet`), so the active payment mode is visible in one
+  fetch instead of requiring someone to read the deployed env vars.
+- Seven tests covering network selection, including a regression guard that
+  the two networks' EIP-712 domains never converge.
+
+### Fixed
+
+- Asset address and EIP-712 domain are now selected together from one
+  `NETWORKS` table rather than being independent constants. Base mainnet USDC
+  signs as `"USD Coin"` while Base Sepolia USDC signs as `"USDC"` — changing
+  the network without changing the domain would fail every client signature,
+  reporting an error that reads like a bad API key. An unknown or blank
+  `X402_NETWORK` logs an error and falls back to mainnet, so a typo can never
+  silently quote prices in worthless testnet USDC.
+
 ## [0.5.0] — 2026-08-25
 
 ### Fixed
@@ -101,7 +125,8 @@ This scanner is a **pattern-breadth detector with ~90% raw false-positive rate b
 - OpenAPI v3 spec at `/openapi.json`.
 - Dockerfile bundling compuute-scan at pinned ref.
 
-[Unreleased]: https://github.com/Compuute/compuute-scan-api/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Compuute/compuute-scan-api/compare/v0.5.1...HEAD
+[0.5.1]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.5.1
 [0.5.0]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.5.0
 [0.4.0]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.4.0
 [0.3.0]: https://github.com/Compuute/compuute-scan-api/releases/tag/v0.3.0

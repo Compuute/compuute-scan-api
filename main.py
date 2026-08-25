@@ -51,7 +51,7 @@ app = FastAPI(
         "security scanner. Designed for agent-callable consumption: "
         "idempotent retries, cache headers, OpenAPI spec, MCP tool exposure."
     ),
-    version="0.5.0",
+    version="0.5.1",
     contact={"name": "Compuute AB", "url": "https://compuute.se", "email": "daniel@compuute.se"},
     license_info={"name": "MIT", "url": "https://github.com/Compuute/compuute-scan-api/blob/main/LICENSE"},
     lifespan=lifespan,
@@ -83,13 +83,30 @@ app.include_router(discovery.router, tags=["discovery"])
 
 @app.get("/v1/health", tags=["health"])
 async def health():
-    """Liveness probe + scanner-binary check."""
+    """Liveness probe + scanner-binary check + active payment network.
+
+    The x402 block is here so the payment mode is visible in one fetch:
+    a service left on testnet quotes prices in worthless USDC, and that
+    must never be something you have to read the env vars to discover.
+    """
     from api.services.scan import COMPUUTE_SCAN_PATH
+    from api.services.x402_service import (
+        IS_TESTNET,
+        NETWORK,
+        NETWORK_LABEL,
+        is_x402_configured,
+    )
     return {
         "status": "operational",
         "version": app.version,
         "scanner_available": COMPUUTE_SCAN_PATH.exists(),
         "scanner_path": str(COMPUUTE_SCAN_PATH),
+        "x402": {
+            "enabled": is_x402_configured(),
+            "network": NETWORK,
+            "network_label": NETWORK_LABEL,
+            "testnet": IS_TESTNET,
+        },
     }
 
 
