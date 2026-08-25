@@ -4,9 +4,8 @@ Exposes machine-readable capability cards and SEO surfaces so AI agents,
 agent-orchestration frameworks, and search engines can find this API
 without manual configuration.
 
-  /.well-known/agent.json        — Google A2A Agent Card
-  /.well-known/agent-card.json   — alias of agent.json (alternate A2A naming
-                                   convention observed in real probes)
+  /.well-known/agent-card.json   — A2A v1.0 Agent Card (canonical path)
+  /.well-known/agent.json        — alias for pre-1.0 A2A clients/crawlers
   /.well-known/ai-plugin.json    — OpenAI/ChatGPT plugin manifest
   /.well-known/x402.json         — x402 payment-discovery manifest for
                                    x402-aware agents/aggregators
@@ -28,22 +27,42 @@ router = APIRouter()
 _BASE_URL = "https://scan.compuute.se"
 
 
-@router.get("/.well-known/agent.json", include_in_schema=False)
+@router.get("/.well-known/agent-card.json", include_in_schema=False)
 async def a2a_agent_card():
-    """A2A Agent Card — Google Agent-to-Agent protocol discovery."""
+    """A2A v1.0 Agent Card (canonical path per spec: agent-card.json).
+
+    Structure follows the A2A v1.0 AgentCard schema (Linux Foundation):
+    supportedInterfaces replaces the old top-level url/preferredTransport.
+    This service speaks MCP (streamable HTTP) and plain REST — declared as
+    custom protocolBinding URIs, honestly: it does NOT implement the A2A
+    JSON-RPC/gRPC message bindings. Fields outside the spec (pricing,
+    payments, agentSafety, mcpEndpoint) are vendor extensions.
+    """
     return JSONResponse({
+        "protocolVersion": "1.0",
         "name": "compuute-scan-api",
         "description": (
             "MCP-specific static security scanner for agents. Scan any public "
             "GitHub MCP-server repo and get severity counts, score, top findings, "
-            "and a triage disclaimer. 37 L1 rules across TS/JS, Python, Go, Rust, "
+            "and a triage disclaimer. 38 L1 rules across TS/JS, Python, Go, Rust, "
             "C#, Java, Kotlin. Threat-intel response cadence: new rules added "
             "within one week of published CVE classes (see compuute-scan v0.6.2's "
             "L1-038 for the Ox Security npx-argument-injection vector)."
         ),
-        "url": _BASE_URL,
-        "version": "0.3.0",
+        "version": "0.5.0",
         "documentationUrl": f"{_BASE_URL}/docs",
+        "supportedInterfaces": [
+            {
+                "url": f"{_BASE_URL}/mcp/",
+                "protocolBinding": "https://modelcontextprotocol.io/streamable-http",
+                "protocolVersion": "2025-06-18",
+            },
+            {
+                "url": f"{_BASE_URL}/v1/scan",
+                "protocolBinding": "https://spec.openapis.org/oas/v3.1",
+                "protocolVersion": "3.1",
+            },
+        ],
         "mcpEndpoint": f"{_BASE_URL}/mcp/",
         "provider": {
             "organization": "Compuute AB",
@@ -52,13 +71,7 @@ async def a2a_agent_card():
         "capabilities": {
             "streaming": False,
             "pushNotifications": False,
-            "stateTransitionHistory": False,
-            "multiTurn": False,
-        },
-        "authentication": {
-            "schemes": ["none", "x402"],
-            "x402Endpoint": f"{_BASE_URL}/v1/scan/pay",
-            "freeEndpoint": f"{_BASE_URL}/v1/scan",
+            "extendedAgentCard": False,
         },
         "skills": [
             {
@@ -74,10 +87,8 @@ async def a2a_agent_card():
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json"],
                 "examples": [
-                    {
-                        "description": "Scan an MCP server you're evaluating",
-                        "input": {"repo_url": "https://github.com/modelcontextprotocol/servers"},
-                    },
+                    'Scan {"repo_url": "https://github.com/modelcontextprotocol/servers"} '
+                    "before connecting an agent to it",
                 ],
             }
         ],
@@ -85,6 +96,13 @@ async def a2a_agent_card():
             "free": "0 USDC — POST /v1/scan, no API key, rate-limited",
             "perScan": "$0.10 USDC on Base L2 — POST /v1/scan/pay with X-Payment header",
             "manualAudit": "$5K-30K — see https://compuute.se/audit",
+        },
+        "payments": {
+            "protocol": "x402",
+            "x402Version": 2,
+            "paidEndpoint": f"{_BASE_URL}/v1/scan/pay",
+            "freeEndpoint": f"{_BASE_URL}/v1/scan",
+            "manifest": f"{_BASE_URL}/.well-known/x402.json",
         },
         "agentSafety": {
             "honestFraming": (
@@ -107,12 +125,13 @@ async def a2a_agent_card():
     })
 
 
-@router.get("/.well-known/agent-card.json", include_in_schema=False)
+@router.get("/.well-known/agent.json", include_in_schema=False)
 async def a2a_agent_card_alias():
-    """Alias of /.well-known/agent.json.
+    """Alias of /.well-known/agent-card.json.
 
-    Some A2A implementations probe the `-card.json` naming convention
-    instead of `agent.json`. Both should return identical content.
+    agent-card.json is the canonical A2A v1.0 well-known path; agent.json
+    is kept for pre-1.0 clients and crawlers that probe the old name.
+    Both return identical content.
     """
     return await a2a_agent_card()
 
@@ -132,10 +151,8 @@ async def x402_discovery_manifest():
     """
     # Import lazily — x402_service has wallet address / price config baked in.
     from api.services.x402_service import (
-        BASE_NETWORK,
-        PRICE_PER_SCAN_USD,
-        USDC_BASE_ADDRESS,
-        WALLET_ADDRESS,
+        build_bazaar_extension,
+        build_payment_requirements,
         is_x402_configured,
     )
 
@@ -152,14 +169,10 @@ async def x402_discovery_manifest():
             ),
             "category": "security",
             "tags": ["mcp", "static-analysis", "supply-chain", "cve"],
-            "accepts": [{
-                "scheme": "exact",
-                "network": BASE_NETWORK,
-                "asset": USDC_BASE_ADDRESS,
-                "amount": str(int(PRICE_PER_SCAN_USD * 1_000_000)),
-                "payTo": WALLET_ADDRESS,
-                "maxTimeoutSeconds": 300,
-            }],
+            "accepts": [
+                build_payment_requirements().model_dump(by_alias=True, exclude_none=True)
+            ],
+            "extensions": build_bazaar_extension(),
         })
 
     return JSONResponse({
@@ -253,7 +266,7 @@ async def llms_txt():
         "\n"
         "## What it covers\n"
         "\n"
-        "- 37 L1 rules across TypeScript/JavaScript, Python, Go, Rust, C#, Java, Kotlin\n"
+        "- 38 L1 rules across TypeScript/JavaScript, Python, Go, Rust, C#, Java, Kotlin\n"
         "- Argument-injection, command-injection, SSRF, supply-chain, secrets leakage, "
         "tool-description-poisoning, prompt-injection-resistance signals\n"
         "- Threat-intel response cadence: new rules added within one week of "
@@ -307,7 +320,7 @@ async def llms_txt():
         "## Machine-readable\n"
         "\n"
         "- OpenAPI: https://scan.compuute.se/openapi.json\n"
-        "- A2A Agent Card: https://scan.compuute.se/.well-known/agent.json\n"
+        "- A2A Agent Card: https://scan.compuute.se/.well-known/agent-card.json\n"
         "- x402 manifest: https://scan.compuute.se/.well-known/x402.json\n"
         "- ChatGPT plugin manifest: https://scan.compuute.se/.well-known/ai-plugin.json\n"
         "- MCP endpoint: https://scan.compuute.se/mcp/\n"
@@ -319,8 +332,8 @@ async def llms_txt():
 async def sitemap_xml():
     urls = [
         ("/", "weekly", "1.0"),
-        ("/.well-known/agent.json", "weekly", "1.0"),
-        ("/.well-known/agent-card.json", "weekly", "0.9"),
+        ("/.well-known/agent-card.json", "weekly", "1.0"),
+        ("/.well-known/agent.json", "weekly", "0.9"),
         ("/.well-known/x402.json", "weekly", "0.9"),
         ("/.well-known/ai-plugin.json", "weekly", "0.9"),
         ("/llms.txt", "weekly", "0.9"),

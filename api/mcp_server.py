@@ -25,7 +25,7 @@ mcp_app = FastMCP(
     name="compuute-scan",
     instructions=(
         "Scan a public GitHub MCP-server repo with compuute-scan, the MCP-specific "
-        "static security scanner (37 L1 rules across TS/JS, Python, Go, Rust, C#, "
+        "static security scanner (38 L1 rules across TS/JS, Python, Go, Rust, C#, "
         "Java, Kotlin). Use this before an agent connects to an unknown MCP server "
         "or before installing a third-party MCP-server package. Every response "
         "carries a triage disclaimer: findings are pattern matches, not exploitability "

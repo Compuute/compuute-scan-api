@@ -7,7 +7,7 @@ Exposes:
   GET  /openapi.json  — machine-readable spec (for agent discovery)
   /mcp/               — Streamable HTTP MCP server (tool: scan_mcp_server)
 
-Wraps compuute-scan v0.6.2 (37 MCP-specific L1 rules, 8 languages).
+Wraps compuute-scan v0.6.2 (38 MCP-specific L1 rules, 8 languages).
 """
 from __future__ import annotations
 
@@ -50,7 +50,7 @@ app = FastAPI(
         "security scanner. Designed for agent-callable consumption: "
         "idempotent retries, cache headers, OpenAPI spec, MCP tool exposure."
     ),
-    version="0.4.0",
+    version="0.5.0",
     contact={"name": "Compuute AB", "url": "https://compuute.se", "email": "daniel@compuute.se"},
     license_info={"name": "MIT", "url": "https://github.com/Compuute/compuute-scan-api/blob/main/LICENSE"},
     lifespan=lifespan,

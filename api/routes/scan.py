@@ -55,7 +55,7 @@ def _cache_put(key: str, value: dict) -> None:
     summary="Scan a public GitHub MCP-server repo with compuute-scan",
     description=(
         "Clones a public GitHub repository and runs compuute-scan's L0+L1 static "
-        "analysis (37 MCP-specific rules across 8 languages: TS/JS, Python, Go, "
+        "analysis (38 MCP-specific rules across 8 languages: TS/JS, Python, Go, "
         "Rust, C#, Java, Kotlin). Returns a structured summary with severity "
         "counts, a coarse 0-100 score, recommendation, and the 10 most severe "
         "findings inline.\n\n"

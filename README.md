@@ -2,7 +2,7 @@
 
 **Scan-as-a-Service for MCP servers.** HTTP + MCP wrapper around [compuute-scan](https://github.com/Compuute/compuute-scan) — the MCP-specific static security scanner. Designed for agent-callable consumption.
 
-POST a public GitHub repo URL → get a structured security report scored against 37 MCP-specific rules across 8 languages (TS/JS, Python, Go, Rust, C#, Java, Kotlin).
+POST a public GitHub repo URL → get a structured security report scored against 38 MCP-specific rules across 8 languages (TS/JS, Python, Go, Rust, C#, Java, Kotlin).
 
 > **Honesty note (read first):** compuute-scan is a **pattern-breadth detector**, not an exploitability oracle. Historic false-positive rate after manual validation is **~90% on raw output** (verified against [modelcontextprotocol/servers](https://github.com/modelcontextprotocol/servers): 138 raw findings → 13 confirmed). Every response carries a `_disclaimer` field stating this explicitly. Use findings as a triage queue, not as a list of confirmed vulnerabilities. See [docs/FP-RATES.md](docs/FP-RATES.md) for per-rule transparency.
 
@@ -40,8 +40,8 @@ Install in Claude Code: `claude mcp add compuute-scan --transport http --url htt
 
 | Path | Format | Consumer |
 |------|--------|----------|
-| `/.well-known/agent.json` | A2A Agent Card | Google A2A protocol |
-| `/.well-known/agent-card.json` | A2A Agent Card (alias) | A2A clients using `-card.json` naming |
+| `/.well-known/agent-card.json` | A2A v1.0 Agent Card (canonical) | A2A protocol clients |
+| `/.well-known/agent.json` | A2A Agent Card (alias) | pre-1.0 A2A clients/crawlers |
 | `/.well-known/ai-plugin.json` | OpenAI plugin manifest | ChatGPT / OpenAI tools |
 | `/.well-known/x402.json` | x402 payment manifest | Coinbase Agent.market crawlers, x402 aggregators |
 | `/.well-known/x402` | Alias of `x402.json` | x402 probes without `.json` suffix |
@@ -109,6 +109,15 @@ export COMPUUTE_SCAN_PATH=$HOME/compuute-scan/compuute-scan.js
 uvicorn main:app --reload
 ```
 
+x402 payment env vars (all optional locally; `/v1/scan/pay` returns 503 until the wallet is set):
+
+| Var | Purpose | Default |
+|-----|---------|---------|
+| `X402_WALLET_ADDRESS` | Base L2 address receiving USDC | unset (x402 disabled) |
+| `X402_PRICE_USD` | Price per scan | `0.10` |
+| `X402_FACILITATOR_URL` | Facilitator base URL | CDP facilitator (Base mainnet) |
+| `CDP_API_KEY_ID` / `CDP_API_KEY_SECRET` | CDP API key for facilitator verify/settle auth | unset (mainnet verify will be rejected) |
+
 ## Tests
 
 ```bash
@@ -130,7 +139,8 @@ pytest tests/ -v
 ## Architecture
 
 - `api/services/scan.py` — clone + sandbox + scan + parse. Pure functions.
-- `api/services/x402_service.py` — x402 verify / settle via Coinbase facilitator.
+- `api/services/x402_service.py` — x402 v2 verify / settle on the official `x402` SDK; CDP facilitator (Base mainnet) by default; Bazaar discovery extension in 402 bodies.
+- `api/services/cdp_auth.py` — minimal CDP API-key JWT auth for the facilitator (PyJWT + cryptography; avoids the full cdp-sdk).
 - `api/serializers/scan_serializer.py` — Pydantic models, strict validation.
 - `api/routes/scan.py` — HTTP layer for `/v1/scan`: idempotency, cache, ETag.
 - `api/routes/scan_x402.py` — HTTP layer for `/v1/scan/pay`.

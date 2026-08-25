@@ -2,7 +2,7 @@
 
 This is the *actual product*: clone a repo (GitHub URL), run the full
 compuute-scan against it in a tempdir, parse the JSON output, return a
-structured response. Reuses 95% of compuute-scan's value (37 L1 rules,
+structured response. Reuses 95% of compuute-scan's value (38 L1 rules,
 8-language coverage, MCP-specific threat patterns) — not just its CVE
 side-feature.
 
