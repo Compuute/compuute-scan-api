@@ -87,17 +87,19 @@ def validate_repo_url(url: str) -> str:
     if not url or len(url) > 256:
         raise ScanError("invalid_url", "URL must be 1-256 chars.", http_status=422)
     stripped = url.strip().rstrip("/")
-    if not _REPO_URL_RE.match(stripped + ("" if stripped.endswith(".git") else ".git")):
-        # Be tolerant of trailing-slash + .git variants
-        if not _REPO_URL_RE.match(stripped):
-            raise ScanError(
-                "invalid_url",
-                "Only public GitHub HTTPS URLs are accepted in this version. "
-                "Example: https://github.com/org/repo",
-                http_status=422,
-            )
+    # Be tolerant of trailing-slash + .git variants: accept if either the
+    # .git-suffixed form or the bare form matches.
+    if not _REPO_URL_RE.match(
+        stripped + ("" if stripped.endswith(".git") else ".git")
+    ) and not _REPO_URL_RE.match(stripped):
+        raise ScanError(
+            "invalid_url",
+            "Only public GitHub HTTPS URLs are accepted in this version. "
+            "Example: https://github.com/org/repo",
+            http_status=422,
+        )
     # Strip trailing .git for the canonical record (compuute-scan handles both)
-    canonical = stripped[:-4] if stripped.endswith(".git") else stripped
+    canonical = stripped.removesuffix(".git")
     return canonical
 
 
@@ -246,7 +248,10 @@ def scan_repo(url: str) -> dict[str, Any]:
             # in case of partial state in production override environments.
             try:
                 shutil.rmtree(repo_dir, ignore_errors=True)
-            except Exception:  # nosec B110
+            # Belt-and-braces: rmtree(ignore_errors=True) already swallows FS
+            # errors. Cleanup must never mask the scan result, and this module
+            # holds no logger by design (pure functions).
+            except Exception:  # nosec B110  # noqa: S110, BLE001
                 pass
 
     summary = raw.get("summary", {}) or {}

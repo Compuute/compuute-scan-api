@@ -23,7 +23,8 @@ logger = structlog.get_logger()
 
 # Load MCP with graceful degradation — REST works without it.
 try:
-    from api.mcp_server import mcp_app as _mcp_app, mcp_http_app
+    from api.mcp_server import mcp_app as _mcp_app
+    from api.mcp_server import mcp_http_app
     _mcp_available = True
 except Exception as _e:  # noqa: BLE001
     _mcp_app = None
@@ -56,9 +57,9 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-import os as _os  # noqa: E402
+import os as _os
 
-from api.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
+from api.middleware.security_headers import SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 

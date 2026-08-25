@@ -142,7 +142,12 @@ async def scan_endpoint(
 )
 async def scan_info():
     """Reports scanner capabilities."""
-    from api.services.scan import COMPUUTE_SCAN_PATH, MAX_REPO_SIZE_MB, SCAN_TIMEOUT_SEC, CLONE_TIMEOUT_SEC
+    from api.services.scan import (
+        CLONE_TIMEOUT_SEC,
+        COMPUUTE_SCAN_PATH,
+        MAX_REPO_SIZE_MB,
+        SCAN_TIMEOUT_SEC,
+    )
     info = {
         "scanner_path_exists": COMPUUTE_SCAN_PATH.exists(),
         "max_repo_size_mb": MAX_REPO_SIZE_MB,
