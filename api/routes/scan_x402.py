@@ -61,15 +61,23 @@ def _payment_required(extra: dict | None = None) -> JSONResponse:
         200: {"description": "Scan completed successfully."},
         402: {"description": "Payment required. Body is an x402 v2 PaymentRequired object."},
         413: {"description": "Repo exceeds size limit."},
-        422: {"description": "Invalid GitHub URL or repo not found."},
+        422: {"description": "Paid request with a missing or invalid body."},
         503: {"description": "x402 not configured on this server."},
     },
 )
 async def scan_with_x402(
-    payload: ScanRequest,
+    payload: ScanRequest | None = None,
     x_payment: str | None = Header(default=None, alias="X-Payment"),
 ):
-    """Scan with x402 micropayment."""
+    """Scan with x402 micropayment.
+
+    The request body is deliberately OPTIONAL so that the payment gate runs
+    before body validation. x402 clients discover pricing by probing the
+    endpoint with no body (this is what `awal x402 details` does, and what a
+    Bazaar crawler does): with a required body, FastAPI answered 422 before
+    this function ran, and the client concluded the endpoint takes no
+    payment at all. A body is still required once a payment is presented.
+    """
     if not is_x402_configured():
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -80,8 +88,19 @@ async def scan_with_x402(
         )
 
     # No payment header → 402 with requirements + Bazaar discovery extension.
+    # Reached with or without a body: this is the discovery path.
     if not x_payment:
         return _payment_required()
+
+    # Paying, but nothing to scan — a real client error, not a discovery probe.
+    if payload is None:
+        return JSONResponse(
+            status_code=422,  # literal: the Starlette constant was renamed and deprecated
+            content={
+                "code": "missing_body",
+                "message": 'Request body is required when paying. Send {"repo_url": "https://github.com/org/repo"}.',
+            },
+        )
 
     # Decode the base64 PaymentPayload from the header (fail-closed).
     payment = decode_payment_header(x_payment)
