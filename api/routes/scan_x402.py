@@ -10,6 +10,7 @@ from __future__ import annotations
 import structlog
 from fastapi import APIRouter, Header, status
 from fastapi.responses import JSONResponse
+from x402.http.utils import encode_payment_response_header
 
 from api.serializers.scan_serializer import ScanRequest, ScanResponse
 from api.services.scan import ScanError, scan_repo
@@ -21,7 +22,6 @@ from api.services.x402_service import (
     settle_payment,
     verify_payment,
 )
-from x402.http.utils import encode_payment_response_header
 
 logger = structlog.get_logger()
 router = APIRouter()

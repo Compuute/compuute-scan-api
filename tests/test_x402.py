@@ -42,7 +42,7 @@ def _client() -> AsyncClient:
 
 def _payment_header() -> str:
     """A structurally valid v2 PaymentPayload, base64-encoded like a client would."""
-    import api.services.x402_service as x402_service
+    from api.services import x402_service
 
     payload = PaymentPayload(
         x402_version=2,

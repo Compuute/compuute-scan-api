@@ -87,8 +87,10 @@ async def a2a_agent_card():
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json"],
                 "examples": [
-                    'Scan {"repo_url": "https://github.com/modelcontextprotocol/servers"} '
-                    "before connecting an agent to it",
+                    (
+                        'Scan {"repo_url": "https://github.com/modelcontextprotocol/servers"} '
+                        "before connecting an agent to it"
+                    ),
                 ],
             }
         ],
