@@ -5,7 +5,7 @@ description: Scan a public GitHub MCP-server repository for security issues befo
 
 # compuute-scan — MCP server security scanner
 
-This skill calls the hosted compuute-scan API to statically analyze a public GitHub MCP-server repository against 37 L1 rules across TypeScript/JavaScript, Python, Go, Rust, C#, Java, and Kotlin.
+This skill calls the hosted compuute-scan API to statically analyze a public GitHub MCP-server repository against 38 L1 rules across TypeScript/JavaScript, Python, Go, Rust, C#, Java, and Kotlin.
 
 ## When to use
 

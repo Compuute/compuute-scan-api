@@ -7,7 +7,7 @@ Exposes:
   GET  /openapi.json  — machine-readable spec (for agent discovery)
   /mcp/               — Streamable HTTP MCP server (tool: scan_mcp_server)
 
-Wraps compuute-scan v0.6.2 (37 MCP-specific L1 rules, 8 languages).
+Wraps compuute-scan v0.6.2 (38 MCP-specific L1 rules, 8 languages).
 """
 from __future__ import annotations
 
@@ -23,7 +23,8 @@ logger = structlog.get_logger()
 
 # Load MCP with graceful degradation — REST works without it.
 try:
-    from api.mcp_server import mcp_app as _mcp_app, mcp_http_app
+    from api.mcp_server import mcp_app as _mcp_app
+    from api.mcp_server import mcp_http_app
     _mcp_available = True
 except Exception as _e:  # noqa: BLE001
     _mcp_app = None
@@ -50,15 +51,15 @@ app = FastAPI(
         "security scanner. Designed for agent-callable consumption: "
         "idempotent retries, cache headers, OpenAPI spec, MCP tool exposure."
     ),
-    version="0.4.0",
+    version="0.5.0",
     contact={"name": "Compuute AB", "url": "https://compuute.se", "email": "daniel@compuute.se"},
     license_info={"name": "MIT", "url": "https://github.com/Compuute/compuute-scan-api/blob/main/LICENSE"},
     lifespan=lifespan,
 )
 
-import os as _os  # noqa: E402
+import os as _os
 
-from api.middleware.security_headers import SecurityHeadersMiddleware  # noqa: E402
+from api.middleware.security_headers import SecurityHeadersMiddleware
 
 app.add_middleware(SecurityHeadersMiddleware)
 

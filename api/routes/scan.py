@@ -55,7 +55,7 @@ def _cache_put(key: str, value: dict) -> None:
     summary="Scan a public GitHub MCP-server repo with compuute-scan",
     description=(
         "Clones a public GitHub repository and runs compuute-scan's L0+L1 static "
-        "analysis (37 MCP-specific rules across 8 languages: TS/JS, Python, Go, "
+        "analysis (38 MCP-specific rules across 8 languages: TS/JS, Python, Go, "
         "Rust, C#, Java, Kotlin). Returns a structured summary with severity "
         "counts, a coarse 0-100 score, recommendation, and the 10 most severe "
         "findings inline.\n\n"
@@ -142,7 +142,12 @@ async def scan_endpoint(
 )
 async def scan_info():
     """Reports scanner capabilities."""
-    from api.services.scan import COMPUUTE_SCAN_PATH, MAX_REPO_SIZE_MB, SCAN_TIMEOUT_SEC, CLONE_TIMEOUT_SEC
+    from api.services.scan import (
+        CLONE_TIMEOUT_SEC,
+        COMPUUTE_SCAN_PATH,
+        MAX_REPO_SIZE_MB,
+        SCAN_TIMEOUT_SEC,
+    )
     info = {
         "scanner_path_exists": COMPUUTE_SCAN_PATH.exists(),
         "max_repo_size_mb": MAX_REPO_SIZE_MB,

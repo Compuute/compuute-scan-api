@@ -116,3 +116,36 @@ async def test_robots_allows_paid_and_free_scan_paths():
     body = resp.text
     assert "Allow: /v1/scan" in body
     assert "Allow: /v1/scan/pay" in body
+
+
+@pytest.mark.asyncio
+async def test_agent_card_is_a2a_v1_compliant():
+    """A2A v1.0: supportedInterfaces present, no legacy top-level url,
+    skills examples are strings, spec-shaped capabilities."""
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        resp = await client.get("/.well-known/agent-card.json")
+    card = resp.json()
+    assert card["protocolVersion"] == "1.0"
+    assert "url" not in card  # replaced by supportedInterfaces in v1.0
+    assert "authentication" not in card  # v0.2-era field, removed
+    interfaces = card["supportedInterfaces"]
+    assert len(interfaces) >= 1
+    for iface in interfaces:
+        assert set(iface) >= {"url", "protocolBinding", "protocolVersion"}
+    caps = card["capabilities"]
+    assert set(caps) <= {"streaming", "pushNotifications", "extendedAgentCard", "extensions"}
+    for skill in card["skills"]:
+        assert set(skill) >= {"id", "name", "description", "tags"}
+        assert all(isinstance(e, str) for e in skill.get("examples", []))
+
+
+@pytest.mark.asyncio
+async def test_x402_manifest_carries_bazaar_extension_and_eip712_extra():
+    """Manifest accepts entries must match the 402 body: EIP-712 extra + bazaar ext."""
+    with patch("api.services.x402_service.WALLET_ADDRESS", "0xWALLETTEST"), \
+         patch("api.services.x402_service.is_x402_configured", return_value=True):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+            resp = await client.get("/.well-known/x402.json")
+    ep = resp.json()["endpoints"][0]
+    assert ep["accepts"][0]["extra"] == {"name": "USD Coin", "version": "2"}
+    assert ep["extensions"]["bazaar"]["info"]["input"]["method"] == "POST"

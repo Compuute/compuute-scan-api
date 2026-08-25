@@ -19,7 +19,6 @@ from api.services.scan import (
 )
 from main import app
 
-
 # ─────────────────────────────────────────────
 # Pure / service-layer
 # ─────────────────────────────────────────────

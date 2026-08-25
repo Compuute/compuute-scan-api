@@ -1,8 +1,6 @@
 """Tests for the MCP server integration."""
 from __future__ import annotations
 
-
-
 from main import app
 
 
@@ -39,8 +37,9 @@ def test_mcp_tool_description_meets_anthropic_spec():
 
 def test_mcp_tool_delegates_to_scan_service():
     """Tool invokes the same scan_repo as the REST endpoint (no duplicate logic)."""
-    from api.mcp_server import scan_mcp_server
     # Inspect source to confirm delegation
     import inspect
+
+    from api.mcp_server import scan_mcp_server
     src = inspect.getsource(scan_mcp_server.fn if hasattr(scan_mcp_server, "fn") else scan_mcp_server)
     assert "scan_repo" in src
